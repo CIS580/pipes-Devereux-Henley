@@ -96,10 +96,14 @@ Pipe.prototype.rotateLeft = function() {
 	}
 }
 
+Pipe.prototype.getEndpoint = function() {
+	return this.endpoints[this.stateIndex];
+}
+
 Pipe.prototype.update = function(elapsedTime) {
 	if(this.fillState == "filling") {
 		this.fillTick += 1;
-		if(fillTick == 5) {
+		if(this.fillTick == 5) {
 			this.fillState = "full";
 		}
 	}
@@ -107,7 +111,7 @@ Pipe.prototype.update = function(elapsedTime) {
 
 Pipe.prototype.render = function(elapsedTime, ctx) {
 	var rpipe = this.states[this.stateIndex];
-	var fillSize = this.fillTicks * this.width / 5;
+	var fillSize = this.fillTick * this.width * 2 / 5;
 	ctx.fillStyle = "blue";
 	ctx.fillRect(this.x, this.y, fillSize, fillSize);
 	ctx.drawImage(

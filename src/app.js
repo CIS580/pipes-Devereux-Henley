@@ -12,27 +12,39 @@ var game = new Game(canvas, update, render);
 var score = 0;
 var level = 1;
 var time = 10000;
-var oldTime = 0;
-var FILLRATE = 1000/8;
+var startTimer;
+var fluidTimer;
+var FILLRATE = 1000/4;
+var pipeBoard;
+var pipeQueue;
+var startY;
+var startPipe;
+var endY;
+var endPipe;
 
+init();
 
-var pipeBoard = [];
-for (var i = 0; i < 14; i++) {
-	pipeBoard[i] = [];
+function init() {
+	pipeBoard = [];
+	pipeQueue = [];
+	for (var i = 0; i < 14; i++) {
+		pipeBoard[i] = [];
+	}
+
+	for (var i = 0; i < 10; i++) {
+		var newPipe = makeRandomPipe(0, 64 * i);	
+		pipeQueue.push(newPipe);	
+	}
+	startY = Math.floor(Math.random() * 10) * 64;
+	startPipe = new Pipe("Straight",128, startY);
+	endY = Math.floor(Math.random() * 10) * 64;
+	endPipe = new Pipe("Straight", 15 * 64, endY);
+	pipeBoard[0][startY / 64] = startPipe;
+	pipeBoard[13][endY / 64] = endPipe;
+
+	startTimer = 0;
+	fluidTimer = 0;
 }
-
-var pipeQueue = [];
-for (var i = 0; i < 10; i++) {
-	var newPipe = makeRandomPipe(0, 64 * i);	
-	pipeQueue.push(newPipe);	
-}
-
-var startY = Math.floor(Math.random() * 10) * 64;
-var startPipe = new Pipe("Straight",128, startY);
-var endY = Math.floor(Math.random() * 10) * 64;
-var endPipe = new Pipe("Straight", 15 * 64, endY);
-pipeBoard[0][startY / 64] = startPipe;
-pipeBoard[13][endY / 64] = endPipe;
 
 canvas.onclick = function(event) {
 	event.preventDefault();
@@ -40,7 +52,10 @@ canvas.onclick = function(event) {
 	var column = Math.floor(event.offsetY / 64);	
 	if(row < 14 && row >= 0 && column >= 0 && column < 10) {
 		if(pipeBoard[row][column] == startPipe || pipeBoard[row][column] == endPipe) return;
-		if(pipeBoard[row][column] == undefined)	pipeBoard[row][column] = (popAndAdjust(pipeQueue, event.offsetX, event.offsetY));
+		if(pipeBoard[row][column] == undefined)	{
+			pipeBoard[row][column] = (popAndAdjust(pipeQueue, event.offsetX, event.offsetY));
+			score += 10;
+		}
 		else if(pipeBoard[row][column] != undefined) pipeBoard[row][column].rotateLeft();
 	}
 };
@@ -51,7 +66,10 @@ canvas.oncontextmenu = function(event) {
 	var column = Math.floor(event.offsetY / 64);
 	if(row < 14 && row >= 0 && column >= 0 && column < 10) {
 		if(pipeBoard[row][column] == startPipe || pipeBoard[row][column] == endPipe) return;
-		if(pipeBoard[row][column] == undefined)	pipeBoard[row][column] = (popAndAdjust(pipeQueue, event.offsetX, event.offsetY));
+		if(pipeBoard[row][column] == undefined) {
+			pipeBoard[row][column] = (popAndAdjust(pipeQueue, event.offsetX, event.offsetY));
+			score += 10;
+		}			
 		else if(pipeBoard[row][column] != undefined) pipeBoard[row][column].rotateRight();
 	}
 }
@@ -108,8 +126,9 @@ masterLoop(performance.now());
 	 * the number of milliseconds passed since the last frame.
 	 */
 function update(elapsedTime) {
-	oldTime += elapsedTime;
-	if(oldTime > FILLRATE) {
+	fluidTimer += elapsedTime;
+	startTimer += elapsedTime;
+	if(fluidTimer > FILLRATE) {
 		for(var i = 0; i < 14; i++) {
 			pipeBoard[i].forEach(function (pipe, idx) {
 				if(pipe.fillState == "full") {
@@ -117,19 +136,37 @@ function update(elapsedTime) {
 				}
 			});
 		}
+		fluidTimer = 0;
 	}
-	// TODO: Advance the fluid
+	if(startTimer > time) {
+		startPipe.fillState = "full";
+		startPipe.fillTick = 5;
+	}
+	if(endPipe.fillState == "full") {
+		level += 1;
+		FILLRATE -= 50;
+		init();
+	}
 }
 
 function fluidPropagate(x, y, time) {
-	var above = pipeBoard[x][y - 1];
-	var left = pipeBoard[x - 1][y];
-	var right = pipeBoard[x + 1][y];
-	var below = pipeBoard[x][y + 1];
-	managePipeState(above, time);
-	managePipeState(left, time);
-	managePipeState(right, time);
-	managePipeState(below, time);	
+	var leftCol = pipeBoard[x-1];
+	var thisCol = pipeBoard[x];
+	var rightCol = pipeBoard[x+1];
+	var cur = thisCol[y];
+
+	if(rightCol != undefined) {
+		var right = rightCol[y];
+		if(right != undefined && cur.getEndpoint().right && right.getEndpoint().left) managePipeState(right, time);
+	}
+	if(leftCol != undefined) {
+		var left = leftCol[y];
+		if(left != undefined && cur.getEndpoint().left && left.getEndpoint().right) managePipeState(left, time);
+	}
+	var above = thisCol[y-1];
+	var below = thisCol[y+1];
+	if(above != undefined && cur.getEndpoint().up && above.getEndpoint().down) managePipeState(above, time);
+	if(below != undefined && cur.getEndpoint().down && below.getEndpoint().up) managePipeState(below, time);	
 }
 
 function managePipeState(pipe, time) {
@@ -157,6 +194,9 @@ function render(elapsedTime, ctx) {
 	ctx.fillStyle = "#777777";
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	ctx.fillStyle = "black";
+	ctx.font = "20px Arial";
+	ctx.fillText("The level is " + level, 10, 700);
+	ctx.fillText("The score is " + score, 10, 750);
 	for(var i = 0; i < 14; i++) {
 		ctx.fillRect(128 + 64 * i, 0, 3, 640);
 	}

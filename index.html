@@ -1,13 +1,18 @@
 <!doctype html>
 <html>
-  <head>
-    <title>Pipes</title>
-    <link type="text/css" rel="stylesheet" href="game.css" />
-  </head>
-  <body>
-    <h1>Play Pipes</h1>
-    <canvas id="screen" width="1024" height="860"></canvas>
-    <h2>Instructions</h2>
-    <script type="text/javascript" src="bundle.js"></script>
-  </body>
+	<head>
+		<title>Pipes</title>
+		<link type="text/css" rel="stylesheet" href="game.css" />
+	</head>
+	<body>
+		<h1>Play Pipes</h1>
+		<audio controls>
+			<source src="assets/bensound-energy.mp3" type="audio/mpeg">
+		</audio>
+		<div>music by bensound.com</div>
+		<canvas id="screen" width="1024" height="860"></canvas>
+		<h2>Instructions</h2>
+		<p>Left click squares to place a random pipe from the queue on the left side. Left click placed pipes to rotate them left, right click to rotate them right. After some time the pipes will begin filling with water. Connect the pipe on the left side to the pipe on the right to win. If water fills all the pipes you lose.</p>	
+		<script type="text/javascript" src="bundle.js"></script>
+	</body>
 </html>
