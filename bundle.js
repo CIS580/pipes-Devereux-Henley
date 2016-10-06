@@ -13,8 +13,11 @@ var game = new Game(canvas, update, render);
 var score = 0;
 var level = 1;
 var time = 10000;
+var onLoss = new Audio('assets/loss.wav');
 var onLevel = new Audio('assets/level.wav');
 var onPlace = new Audio('assets/place.wav');
+var fillFlag;
+var gameOver;
 var startTimer;
 var fluidTimer;
 var FILLRATE = 1000/4;
@@ -47,6 +50,8 @@ function init() {
 
 	startTimer = 0;
 	fluidTimer = 0;
+	fillFlag = true;
+	gameOver = false;
 }
 
 canvas.onclick = function(event) {
@@ -134,6 +139,7 @@ function update(elapsedTime) {
 	fluidTimer += elapsedTime;
 	startTimer += elapsedTime;
 	if(fluidTimer > FILLRATE) {
+		fillFlag = false;
 		for(var i = 0; i < 14; i++) {
 			pipeBoard[i].forEach(function (pipe, idx) {
 				if(pipe.fillState == "full") {
@@ -143,15 +149,22 @@ function update(elapsedTime) {
 		}
 		fluidTimer = 0;
 	}
-	if(startTimer > time) {
+	if(startTimer > time && startPipe.fillState == "idle") {
 		startPipe.fillState = "full";
 		startPipe.fillTick = 5;
+		fillFlag = true;
 	}
+
 	if(endPipe.fillState == "full") {
 		onLevel.play();
 		level += 1;
 		FILLRATE *= 9.0 / 10.0;
 		init();
+	}
+
+	if(!fillFlag && startTimer > time && !gameOver) {
+		onLoss.play();
+		gameOver = true;
 	}
 }
 
@@ -176,13 +189,15 @@ function fluidPropagate(x, y, time) {
 }
 
 function managePipeState(pipe, time) {
-	if(pipe != undefined) {
+	if(pipe != undefined) {	
 		switch(pipe.fillState) {
 			case "idle":
 				pipe.fillState = "filling";
+				fillFlag = true;
 				pipe.update(time);
 				break;
 			case "filling":
+				fillFlag = true;
 				pipe.update(time);
 				break;
 		}
@@ -201,22 +216,27 @@ function render(elapsedTime, ctx) {
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	ctx.fillStyle = "black";
 	ctx.font = "20px Arial";
-	ctx.fillText("The level is " + level, 10, 700);
-	ctx.fillText("The score is " + score, 10, 750);
-	for(var i = 0; i < 14; i++) {
-		ctx.fillRect(128 + 64 * i, 0, 3, 640);
+	if(gameOver) {
+		ctx.fillText("Game over", canvas.width / 3, canvas.height / 3);
 	}
-	for(var i = 0; i < 11; i++) {
-		ctx.fillRect(128, 64 * i, canvas.width - 128, 3);
-	}
-	pipeQueue.forEach(function(pipe) {
-		pipe.render(elapsedTime, ctx);
-	});
-	for(var i = 0; i < 14; i++) {
-		var pipeRow = pipeBoard[i];
-		pipeRow.forEach(function(pipe) {
+	else {
+		ctx.fillText("The level is " + level, 10, 700);
+		ctx.fillText("The score is " + score, 10, 750);
+		for(var i = 0; i < 14; i++) {
+			ctx.fillRect(128 + 64 * i, 0, 3, 640);
+		}
+		for(var i = 0; i < 11; i++) {
+			ctx.fillRect(128, 64 * i, canvas.width - 128, 3);
+		}
+		pipeQueue.forEach(function(pipe) {
 			pipe.render(elapsedTime, ctx);
 		});
+		for(var i = 0; i < 14; i++) {
+			var pipeRow = pipeBoard[i];
+			pipeRow.forEach(function(pipe) {
+				pipe.render(elapsedTime, ctx);
+			});
+		}
 	}	
 }
 
