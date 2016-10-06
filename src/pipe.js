@@ -2,6 +2,8 @@
 
 module.exports = exports = Pipe;
 
+var onTurn = new Audio('assets/rotate.wav');
+
 function PipeRenderInfo(x, y) { 
 	this.x = x;
 	this.y = y; 
@@ -75,6 +77,7 @@ function Pipe(pipetype, x, y) {
 }
 
 Pipe.prototype.rotateRight = function() {
+	onTurn.play();
 	if(this.fillState == "idle") {
 		if(this.stateIndex == this.states.length - 1) {
 			this.stateIndex = 0;
@@ -86,6 +89,7 @@ Pipe.prototype.rotateRight = function() {
 }
 
 Pipe.prototype.rotateLeft = function() {
+	onTurn.play();
 	if(this.fillState == "idle") {
 		if(this.stateIndex == 0) {
 			this.stateIndex = this.states.length - 1;

@@ -13,6 +13,8 @@ var game = new Game(canvas, update, render);
 var score = 0;
 var level = 1;
 var time = 10000;
+var onLevel = new Audio('assets/level.wav');
+var onPlace = new Audio('assets/place.wav');
 var startTimer;
 var fluidTimer;
 var FILLRATE = 1000/4;
@@ -54,6 +56,7 @@ canvas.onclick = function(event) {
 	if(row < 14 && row >= 0 && column >= 0 && column < 10) {
 		if(pipeBoard[row][column] == startPipe || pipeBoard[row][column] == endPipe) return;
 		if(pipeBoard[row][column] == undefined)	{
+			onPlace.play();
 			pipeBoard[row][column] = (popAndAdjust(pipeQueue, event.offsetX, event.offsetY));
 			score += 10;
 		}
@@ -68,6 +71,7 @@ canvas.oncontextmenu = function(event) {
 	if(row < 14 && row >= 0 && column >= 0 && column < 10) {
 		if(pipeBoard[row][column] == startPipe || pipeBoard[row][column] == endPipe) return;
 		if(pipeBoard[row][column] == undefined) {
+			onPlace.play();
 			pipeBoard[row][column] = (popAndAdjust(pipeQueue, event.offsetX, event.offsetY));
 			score += 10;
 		}			
@@ -144,8 +148,9 @@ function update(elapsedTime) {
 		startPipe.fillTick = 5;
 	}
 	if(endPipe.fillState == "full") {
+		onLevel.play();
 		level += 1;
-		FILLRATE -= 50;
+		FILLRATE *= 9.0 / 10.0;
 		init();
 	}
 }
@@ -278,6 +283,8 @@ Game.prototype.loop = function(newTime) {
 
 module.exports = exports = Pipe;
 
+var onTurn = new Audio('assets/rotate.wav');
+
 function PipeRenderInfo(x, y) { 
 	this.x = x;
 	this.y = y; 
@@ -351,6 +358,7 @@ function Pipe(pipetype, x, y) {
 }
 
 Pipe.prototype.rotateRight = function() {
+	onTurn.play();
 	if(this.fillState == "idle") {
 		if(this.stateIndex == this.states.length - 1) {
 			this.stateIndex = 0;
@@ -362,6 +370,7 @@ Pipe.prototype.rotateRight = function() {
 }
 
 Pipe.prototype.rotateLeft = function() {
+	onTurn.play();
 	if(this.fillState == "idle") {
 		if(this.stateIndex == 0) {
 			this.stateIndex = this.states.length - 1;
